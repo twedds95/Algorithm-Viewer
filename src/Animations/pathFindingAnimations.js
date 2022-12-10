@@ -1,6 +1,6 @@
 import React from "react";
 import './pathFindingAnimations.css';
-import {getA_StarAnimations} from "../PathFindingAlgorithms/aStar";
+import { getA_StarAnimations } from "../PathFindingAlgorithms/aStar";
 
 const PRIMARY_COLOR = '#e7e4e4';
 const START_COLOR = 'rgb(3,253,77)';
@@ -25,7 +25,7 @@ export default class PathFindingVisualizer extends React.Component {
         super(props);
 
         this.state = {
-            grid: [],
+            grid: []
         };
     }
 
@@ -38,29 +38,40 @@ export default class PathFindingVisualizer extends React.Component {
         // let points = generateTwoUniquePoints();
         // let start = {isA: 'start', x: points.startX, y: points.startY};
         // let end = {isA: 'end', x: points.endX, y: points.endY};
-        let start = {isA: 'start', x: 0, y: 0};
-        let end = {isA: 'end', x: NUMBER_OF_BOXES_WIDTH - 1, y: NUMBER_OF_BOXES_HEIGHT - 1};
+        let start = { isA: 'start', x: 0, y: 0 };
+        let end = { isA: 'end', x: NUMBER_OF_BOXES_WIDTH - 1, y: NUMBER_OF_BOXES_HEIGHT - 1 };
         for (let i = 0; i < NUMBER_OF_BOXES_WIDTH; i++) {
             for (let j = 0; j < NUMBER_OF_BOXES_HEIGHT; j++) {
                 if (!((i === start.x && j === start.y) || (i === end.x && j === end.y))) {
                     if (Math.random() < PROB_OF_WALL) {
-                        grid.push({isA: 'wall', x: i, y: j});
+                        grid.push({ isA: 'wall', x: i, y: j });
                     } else {
-                        grid.push({isA: 'free', x: i, y: j});
+                        grid.push({ isA: 'free', x: i, y: j });
                     }
                 }
             }
         }
         grid.push(start);
         grid.push(end);
-        this.setState({grid});
+        this.setState({ grid });
     }
 
-    resetPath(){
+    resetPath() {
         window.location.reload(true);
     }
 
     animatePath() {
+        document.getElementById('startButton').disabled = true;
+        document.getElementById('startButton').innerText = "Calculating...";
+        return new Promise((runAnimations) => {
+            setTimeout(() => {
+                this.runAnimations();
+                document.getElementById('startButton').innerText = "Finding Path";
+            });
+        });
+    }
+
+    runAnimations = () => {
         let animations = [];
         switch (document.getElementById('algorithm').value) {
             case "A*":
@@ -142,7 +153,7 @@ export default class PathFindingVisualizer extends React.Component {
     }
 
     render() {
-        const {grid} = this.state;
+        const { grid } = this.state;
         return (
             <div>
                 <h1> Visualize Path Finding Algorithms at Work</h1>
@@ -151,7 +162,7 @@ export default class PathFindingVisualizer extends React.Component {
                 <select className="m-2" id="algorithm">
                     {this.createSelection()}
                 </select>
-                <button onClick={() => this.animatePath()}>Find Path</button>
+                <button id="startButton" onClick={() => this.animatePath()}>Find Path</button>
                 <div className="array-container">
                     {grid.map(g => this.renderTheGrid(g))}
                 </div>

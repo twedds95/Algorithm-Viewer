@@ -28,6 +28,10 @@
   color: #61dafb;
 }
 
+button:disabled {
+  pointer-events: none;
+}
+
 body {
   background: #fafafa;
   color: #428bca;

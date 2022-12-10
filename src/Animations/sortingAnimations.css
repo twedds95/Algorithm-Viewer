@@ -24,6 +24,13 @@ button {
     margin: 5px;
 }
 
+button:hover {
+    color: #428bca;
+    background-color: white;
+    border-color: #428bca;
+    border-radius: 8px;
+}
+
 select {
     background-color: white;
     color: #428bca;
@@ -36,13 +43,6 @@ option, label {
     background-color: white;
     color: #428bca;
     margin-left: 10px;
-}
-
-button:hover {
-    color: #428bca;
-    background-color: white;
-    border-color: #428bca;
-    border-radius: 8px;
 }
 
 body {

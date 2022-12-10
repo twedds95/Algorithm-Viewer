@@ -44,6 +44,15 @@ export default class SortingVisualizer extends React.Component {
     }
 
     animateSorting() {
+        document.getElementById('startButton').disabled = true;
+        return new Promise((runSorting) => {
+            setTimeout(() => {
+                this.runSorting();
+            });
+          });
+    }
+
+    runSorting = () => {
         let animations = [];
         switch (document.getElementById('algorithm').value) {
             case "Merge Sort":
@@ -133,7 +142,7 @@ export default class SortingVisualizer extends React.Component {
                 <select className="m-2" id="algorithm">
                     {this.createSelection()}
                 </select>
-                <button onClick={() => this.animateSorting()}>Start Sort</button>
+                <button id="startButton" onClick={() => this.animateSorting()}>Start Sort</button>
                 <div className="array-container">
                     {array.map((value, idx) => (
                         <div
