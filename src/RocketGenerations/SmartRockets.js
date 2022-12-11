@@ -49,7 +49,9 @@ export default class SmartRockets extends React.Component {
                         {this.renderRockets()}
                         {this.renderLanding()}
                         {this.renderObstacles()}
-                        
+                        <svg xmlns="http://www.w3.org/2000/svg" > 
+                            <ellipse fill="black" cx={WIDTH / 5 + ROCKET_DIM / 2} cy={HEIGHT} rx={ROCKET_DIM} ry={ROCKET_DIM/10} />
+                        </svg>
                     </svg>
                 </div>
 
