@@ -6,9 +6,8 @@ import Rocket from "./Rocket";
 // - make user variable NUMBER_OF_ROCKETS - MUTATION_ODDS - MAX_SPEED - MASS - GRAVITY
 
 const HEIGHT = 500;
-const WIDTH = window.innerWidth * 0.9;
-export const ROCKET_DIM = 40;
-const LAUNCH_POS_X = WIDTH / 5;
+const WIDTH = getRocketWindowWidth();
+export const ROCKET_DIM = WIDTH / 80 + 25;
 
 const NUMBER_OF_OBSTACLES = Math.ceil(WIDTH / 250);
 const NUMBER_OF_ROCKETS = 50;
@@ -21,7 +20,7 @@ export default class SmartRockets extends React.Component {
         super(props);
         let rockets = [];
         for (let i = 0; i < NUMBER_OF_ROCKETS; i++) {
-            let rocket = new Rocket(LAUNCH_POS_X, HEIGHT - ROCKET_DIM);
+            let rocket = new Rocket(getRocketWindowWidth() / 5, HEIGHT - ROCKET_DIM);
             rocket.randomizeGenes(NUMBER_OF_FRAMES);
             rockets.push(rocket);
         }
@@ -29,26 +28,13 @@ export default class SmartRockets extends React.Component {
             population: { generation: 0, rockets: rockets },
             allStopped: false,
             obstacles: this.randomizeObstacles(),
-            finish: { x: WIDTH, y: HEIGHT / 2, radius: 100 }
+            finish: { x: WIDTH * 0.95, y: HEIGHT / 2, radius: 100 }
         };
 
         this.launchRockets = this.launchRockets.bind(this);
     }
 
     componentDidMount() {
-    }
-
-    renderStuff() {
-        const stuff = [];
-        let obs = this.state.obstacles;
-        for (let i = 0; i < obs.length; i++) {
-            stuff.push(this.renderObstacle(obs[i]));
-        }
-        let rockets = this.state.population.rockets;
-        for (let i = 0; i < rockets.length; i++) {
-            stuff.push(this.renderRockets(rockets[i]));
-        }
-        return stuff;
     }
 
     render() {
@@ -60,8 +46,9 @@ export default class SmartRockets extends React.Component {
                 <button onClick={() => this.launchRockets()}>Launch Rockets</button>
                 <div>
                     <svg className="rocketArea">
-                        {this.renderStuff()}
+                        {this.renderRockets()}
                         {this.renderLanding()}
+                        {this.renderObstacles()}
                         
                     </svg>
                 </div>
@@ -75,14 +62,14 @@ export default class SmartRockets extends React.Component {
     }
 
     getCurrentGeneration() {
-        let bounds = { left: 0, right: WIDTH, top: 0, bottom: HEIGHT, finish: this.state.finish };
+        let bounds = { left: 0, right: getRocketWindowWidth(), top: 0, bottom: HEIGHT, finish: this.state.finish };
         let rockets = this.state.population.rockets;
         let isStopped = true;
         for (let i = 0; i < rockets.length; i++) {
             isStopped = rockets[i].updatePosition(this.state.obstacles, bounds) && isStopped;
         }
         let newPopulation = { generation: this.state.population.generation, rockets: rockets };
-        return ({ population: newPopulation, allStopped: isStopped });
+        return ({ population: newPopulation, allStopped: isStopped});
     }
 
 
@@ -117,19 +104,23 @@ export default class SmartRockets extends React.Component {
             let parents = [Math.floor(Math.random() * matingPool.length), Math.floor(Math.random() * matingPool.length)];
             newRockets.push(matingPool[parents[0]].makeChild(matingPool[parents[1]]));
         }
-        this.setState({ population: { generation: this.state.population.generation + 1, rockets: newRockets }, allStopped: false });
+        this.setState({
+            population: { generation: this.state.population.generation + 1, rockets: newRockets },
+            allStopped: false,
+            finish: { x: getRocketWindowWidth() * 0.95, y: HEIGHT / 2, radius: 100 },
+        });
         this.launchRockets();
     }
 
     randomizeObstacles() {
         const obs = [];
         for (let i = 0; i < NUMBER_OF_OBSTACLES; i++) {
-            let startX = (WIDTH * 0.2);
+            let startX = (WIDTH * 0.05);
             let endX = (WIDTH * 0.8);
             let x = startX + (endX - startX) / NUMBER_OF_OBSTACLES * (i + 0.5);
             let y = randomNumber((HEIGHT * 0.9), (HEIGHT * 0.1));
-            if (Math.abs(x - LAUNCH_POS_X) < ROCKET_DIM) y = randomNumber((HEIGHT * 0.8 - 2 * ROCKET_DIM), (HEIGHT * 0.1)); // Don't want obstacles close to rockets launching
-            let radius = randomNumber((WIDTH * 0.04), (WIDTH * 0.01));
+            if (Math.abs(x - WIDTH / 5) < 4 * ROCKET_DIM) y = randomNumber((HEIGHT * 0.5), (HEIGHT * 0.1)); // Don't want obstacles close to rockets launching
+            let radius = randomNumber((WIDTH * 0.045), (WIDTH * 0.025));
             let colour = randomAsteroidColour();
             let rotation = randomNumber(360);
             obs.push({ x, y, radius, colour, rotation });
@@ -137,30 +128,44 @@ export default class SmartRockets extends React.Component {
         return obs;
     }
 
-    renderObstacle(obstacle) {
-        return (
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999"
-                width={obstacle.radius * 2} height={obstacle.radius * 2}
-                x={obstacle.x - obstacle.radius} y={obstacle.y - obstacle.radius}>
-                <path fill={obstacle.colour}
-                    d="M496.129 209.771c-4.238-20.552-4.892-41.59-2.602-62.45.195-1.775.295-3.586.295-5.424 0-11.581-3.984-22.057-10.416-29.617-11.896-13.979-22.412-29.019-31.534-44.948-13.746-24.007-40.23-40.265-70.654-40.265-2.286 0-4.55.092-6.787.274-18.686 1.514-37.438-1.032-55.417-6.344-21.71-6.415-44.298-9.849-67.129-9.849-129.451 0-242.278 114.705-240.74 247.726a246.562 246.562 0 0 0 2.661 33.448c3.682 24.75 2.806 49.928-1.594 74.561-2.91 16.288.833 35.298 11.709 52.214 6.862 10.671 15.66 19.1 25.244 24.901 11.575 7.007 21.965 15.757 30.606 26.169 11.998 14.457 31.079 31.818 51.326 30.529a77.902 77.902 0 0 0 11.446-1.581c24.369-5.246 49.563-5.367 74.171-1.397a246.114 246.114 0 0 0 35.913 3.114c134.601 1.819 246.108-106.334 248.211-240.931a229.804 229.804 0 0 0-4.709-50.13z" />
-                <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="91.827" cy="306.458" rx="36.174" ry="50.477" />
-                <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="136.716" cy="406.621" rx="30.242" ry="21.148" />
-                <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="422.959" cy="255.981" rx="33.392" ry="44.522" />
-                <path
-                    transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"}
-                    d="M255.999 44.569c-57.802 0-111.774 22.882-151.974 64.431-4.275 4.418-4.158 11.464.259 15.739a11.09 11.09 0 0 0 7.738 3.131c2.91 0 5.817-1.134 8.001-3.39 35.969-37.176 84.26-57.649 135.976-57.649 6.146 0 11.131-4.983 11.131-11.131s-4.983-11.131-11.131-11.131zM83.255 153.925a11.08 11.08 0 0 0 6.185 1.884c3.588 0 7.11-1.732 9.257-4.938l.228-.341c3.42-5.107 2.055-12.021-3.053-15.442-5.106-3.42-12.019-2.055-15.442 3.053l-.228.341c-3.42 5.108-2.055 12.022 3.053 15.443z" />
-                <path
-                    d="M507.03 207.523c-3.861-18.718-4.681-38.564-2.439-58.989.24-2.192.362-4.424.362-6.637 0-13.845-4.641-26.926-13.071-36.831-11.314-13.296-21.525-27.852-30.351-43.266-16.198-28.29-46.972-45.864-80.312-45.864-2.56 0-5.145.105-7.686.309-16.303 1.321-33.589-.672-51.363-5.925C299.027 3.483 275.381.015 251.886.015c-32.875 0-65.231 6.933-96.17 20.608C126 33.757 99.068 52.417 75.671 76.089c-23.862 24.14-42.594 52.004-55.674 82.819C6.342 191.078-.381 224.753.017 259.003a258.78 258.78 0 0 0 2.782 34.956c3.358 22.567 2.838 46.444-1.542 70.966-3.509 19.646 1.339 41.586 13.304 60.192 7.536 11.723 17.511 21.544 28.842 28.403 10.785 6.529 20.141 14.521 27.804 23.755 13.269 15.99 33.848 34.624 57.703 34.621.958 0 1.927-.03 2.896-.092a89.277 89.277 0 0 0 13.081-1.809c22.191-4.776 45.76-5.21 70.057-1.289a258.497 258.497 0 0 0 41.041 3.278c139.293 0 253.802-112.293 255.985-251.91a241.849 241.849 0 0 0-4.94-52.551zm-17.318 52.205c-1.992 127.48-106.537 229.997-233.731 229.997a236.186 236.186 0 0 1-37.492-2.995c-12.124-1.957-24.105-2.934-35.883-2.934-14.489 0-28.664 1.48-42.405 4.438a66.88 66.88 0 0 1-9.809 1.353c-12.142.781-27.426-8.9-42.053-26.528-9.253-11.149-20.492-20.766-33.408-28.583-8.447-5.112-15.931-12.512-21.646-21.398-8.961-13.935-12.648-30.058-10.115-44.238 4.805-26.901 5.359-53.196 1.646-78.155a236.388 236.388 0 0 1-2.541-31.939c-.704-60.917 24.529-121.788 69.227-167.006 43.636-44.144 102.095-69.462 160.384-69.462 21.357 0 42.881 3.16 63.976 9.392 20.412 6.032 40.419 8.309 59.469 6.765a73.5 73.5 0 0 1 5.889-.237c25.381 0 48.752 13.283 60.995 34.665 9.505 16.603 20.514 32.292 32.716 46.631 5.006 5.882 7.764 13.839 7.764 22.403 0 1.406-.077 2.823-.229 4.21-2.497 22.737-1.566 44.914 2.765 65.913a219.77 219.77 0 0 1 4.481 47.708z" />
-                <path
-                    transform-origin="center"
-                    transform={"rotate(" + obstacle.rotation + ")"}
-                    d="M126.453 348.636c8.176-11.409 12.679-26.387 12.679-42.176 0-15.789-4.502-30.767-12.679-42.176-8.85-12.348-21.471-19.431-34.626-19.431s-25.776 7.082-34.626 19.431c-8.176 11.409-12.679 26.387-12.679 42.176 0 15.79 4.502 30.768 12.679 42.176 8.85 12.348 21.471 19.431 34.626 19.431s25.775-7.083 34.626-19.431zm-34.627-2.831c-13.575 0-25.044-18.018-25.044-39.345s11.469-39.345 25.044-39.345 25.044 18.017 25.044 39.345c-.001 21.328-11.469 39.345-25.044 39.345zm44.892 28.534c-23.197 0-41.368 14.178-41.368 32.278s18.171 32.278 41.368 32.278 41.369-14.178 41.369-32.278-18.172-32.278-41.369-32.278zm0 42.296c-11.664 0-19.107-5.934-19.107-10.017 0-4.084 7.444-10.017 19.107-10.017 11.664 0 19.108 5.934 19.108 10.017 0 4.083-7.443 10.017-19.108 10.017zm286.24-216.302c-24.549 0-44.522 24.966-44.522 55.653s19.973 55.653 44.522 55.653 44.522-24.966 44.522-55.653-19.972-55.653-44.522-55.653zm0 89.043c-12.067 0-22.261-15.291-22.261-33.392 0-18.1 10.194-33.392 22.261-33.392 12.067 0 22.261 15.291 22.261 33.392 0 18.1-10.194 33.392-22.261 33.392z" />
-            </svg>
-        );
+    renderObstacles() {
+        const renderObstacles = [];
+        for (let i = 0; i < this.state.obstacles.length; i++) {
+            const obstacle = this.state.obstacles[i];
+            renderObstacles.push((
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 511.999 511.999"
+                    width={obstacle.radius * 2} height={obstacle.radius * 2}
+                    x={obstacle.x - obstacle.radius} y={obstacle.y - obstacle.radius}>
+                    <path fill={obstacle.colour}
+                        d="M496.129 209.771c-4.238-20.552-4.892-41.59-2.602-62.45.195-1.775.295-3.586.295-5.424 0-11.581-3.984-22.057-10.416-29.617-11.896-13.979-22.412-29.019-31.534-44.948-13.746-24.007-40.23-40.265-70.654-40.265-2.286 0-4.55.092-6.787.274-18.686 1.514-37.438-1.032-55.417-6.344-21.71-6.415-44.298-9.849-67.129-9.849-129.451 0-242.278 114.705-240.74 247.726a246.562 246.562 0 0 0 2.661 33.448c3.682 24.75 2.806 49.928-1.594 74.561-2.91 16.288.833 35.298 11.709 52.214 6.862 10.671 15.66 19.1 25.244 24.901 11.575 7.007 21.965 15.757 30.606 26.169 11.998 14.457 31.079 31.818 51.326 30.529a77.902 77.902 0 0 0 11.446-1.581c24.369-5.246 49.563-5.367 74.171-1.397a246.114 246.114 0 0 0 35.913 3.114c134.601 1.819 246.108-106.334 248.211-240.931a229.804 229.804 0 0 0-4.709-50.13z" />
+                    <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="91.827" cy="306.458" rx="36.174" ry="50.477" />
+                    <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="136.716" cy="406.621" rx="30.242" ry="21.148" />
+                    <ellipse transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"} fill="#afafaf" cx="422.959" cy="255.981" rx="33.392" ry="44.522" />
+                    <path
+                        transform-origin="center" transform={"rotate(" + obstacle.rotation + ")"}
+                        d="M255.999 44.569c-57.802 0-111.774 22.882-151.974 64.431-4.275 4.418-4.158 11.464.259 15.739a11.09 11.09 0 0 0 7.738 3.131c2.91 0 5.817-1.134 8.001-3.39 35.969-37.176 84.26-57.649 135.976-57.649 6.146 0 11.131-4.983 11.131-11.131s-4.983-11.131-11.131-11.131zM83.255 153.925a11.08 11.08 0 0 0 6.185 1.884c3.588 0 7.11-1.732 9.257-4.938l.228-.341c3.42-5.107 2.055-12.021-3.053-15.442-5.106-3.42-12.019-2.055-15.442 3.053l-.228.341c-3.42 5.108-2.055 12.022 3.053 15.443z" />
+                    <path
+                        d="M507.03 207.523c-3.861-18.718-4.681-38.564-2.439-58.989.24-2.192.362-4.424.362-6.637 0-13.845-4.641-26.926-13.071-36.831-11.314-13.296-21.525-27.852-30.351-43.266-16.198-28.29-46.972-45.864-80.312-45.864-2.56 0-5.145.105-7.686.309-16.303 1.321-33.589-.672-51.363-5.925C299.027 3.483 275.381.015 251.886.015c-32.875 0-65.231 6.933-96.17 20.608C126 33.757 99.068 52.417 75.671 76.089c-23.862 24.14-42.594 52.004-55.674 82.819C6.342 191.078-.381 224.753.017 259.003a258.78 258.78 0 0 0 2.782 34.956c3.358 22.567 2.838 46.444-1.542 70.966-3.509 19.646 1.339 41.586 13.304 60.192 7.536 11.723 17.511 21.544 28.842 28.403 10.785 6.529 20.141 14.521 27.804 23.755 13.269 15.99 33.848 34.624 57.703 34.621.958 0 1.927-.03 2.896-.092a89.277 89.277 0 0 0 13.081-1.809c22.191-4.776 45.76-5.21 70.057-1.289a258.497 258.497 0 0 0 41.041 3.278c139.293 0 253.802-112.293 255.985-251.91a241.849 241.849 0 0 0-4.94-52.551zm-17.318 52.205c-1.992 127.48-106.537 229.997-233.731 229.997a236.186 236.186 0 0 1-37.492-2.995c-12.124-1.957-24.105-2.934-35.883-2.934-14.489 0-28.664 1.48-42.405 4.438a66.88 66.88 0 0 1-9.809 1.353c-12.142.781-27.426-8.9-42.053-26.528-9.253-11.149-20.492-20.766-33.408-28.583-8.447-5.112-15.931-12.512-21.646-21.398-8.961-13.935-12.648-30.058-10.115-44.238 4.805-26.901 5.359-53.196 1.646-78.155a236.388 236.388 0 0 1-2.541-31.939c-.704-60.917 24.529-121.788 69.227-167.006 43.636-44.144 102.095-69.462 160.384-69.462 21.357 0 42.881 3.16 63.976 9.392 20.412 6.032 40.419 8.309 59.469 6.765a73.5 73.5 0 0 1 5.889-.237c25.381 0 48.752 13.283 60.995 34.665 9.505 16.603 20.514 32.292 32.716 46.631 5.006 5.882 7.764 13.839 7.764 22.403 0 1.406-.077 2.823-.229 4.21-2.497 22.737-1.566 44.914 2.765 65.913a219.77 219.77 0 0 1 4.481 47.708z" />
+                    <path
+                        transform-origin="center"
+                        transform={"rotate(" + obstacle.rotation + ")"}
+                        d="M126.453 348.636c8.176-11.409 12.679-26.387 12.679-42.176 0-15.789-4.502-30.767-12.679-42.176-8.85-12.348-21.471-19.431-34.626-19.431s-25.776 7.082-34.626 19.431c-8.176 11.409-12.679 26.387-12.679 42.176 0 15.79 4.502 30.768 12.679 42.176 8.85 12.348 21.471 19.431 34.626 19.431s25.775-7.083 34.626-19.431zm-34.627-2.831c-13.575 0-25.044-18.018-25.044-39.345s11.469-39.345 25.044-39.345 25.044 18.017 25.044 39.345c-.001 21.328-11.469 39.345-25.044 39.345zm44.892 28.534c-23.197 0-41.368 14.178-41.368 32.278s18.171 32.278 41.368 32.278 41.369-14.178 41.369-32.278-18.172-32.278-41.369-32.278zm0 42.296c-11.664 0-19.107-5.934-19.107-10.017 0-4.084 7.444-10.017 19.107-10.017 11.664 0 19.108 5.934 19.108 10.017 0 4.083-7.443 10.017-19.108 10.017zm286.24-216.302c-24.549 0-44.522 24.966-44.522 55.653s19.973 55.653 44.522 55.653 44.522-24.966 44.522-55.653-19.972-55.653-44.522-55.653zm0 89.043c-12.067 0-22.261-15.291-22.261-33.392 0-18.1 10.194-33.392 22.261-33.392 12.067 0 22.261 15.291 22.261 33.392 0 18.1-10.194 33.392-22.261 33.392z" />
+                </svg>
+            ));
+        }
+        return renderObstacles;
+    }
+
+    renderRockets() {
+        const renderRockets = [];
+        let rockets = this.state.population.rockets;
+        for (let i = 0; i < rockets.length; i++) {
+            renderRockets.push(this.renderRocket(rockets[i]));
+        }
+        return renderRockets;
     }
                  
-    renderRockets(rocket) {
+    renderRocket(rocket) {
         return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491.52 491.52"
             width={ROCKET_DIM} height={ROCKET_DIM}
             x={rocket.pos.x} y={rocket.pos.y}>
@@ -229,6 +234,10 @@ function randomAsteroidColour() {
     let g = Math.floor(randomNumber(120, 25)).toString(16).padStart(2, "0");
     let b = Math.floor(randomNumber(45, 20)).toString(16).padStart(2, "0");
     return "#" + r + g + b;
+}
+
+function getRocketWindowWidth() {
+    return window.innerWidth * 0.9;
 }
 
 export function randomNumber(max, min) {

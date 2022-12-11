@@ -11,7 +11,7 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
     this.fuelCapacity = fuelCapacity;
     this.frame = 0;
     this.pos = { x: startX, y: startY };
-    this.velocity = { x: 0, y: 0 };      
+    this.velocity = { x: 0, y: 0 };
     this.rotation = 0;
     this.acceleration = { x: 0, y: 0 };
     this.strength = 0;
@@ -83,18 +83,19 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
         if (!this.isLanded && !this.isCrashed) {
             this.applyForce();
             //check if isCrashed or isLanded with obstacles and bounds
+            let rocketTrianglePoints = this.getTrianglePointsFromRocket();
             for (let i = 0; i < obstacles.length; i++) {
                 let o = obstacles[i];
-                if (checkIfRocketHitEllipse(this, o.x, o.y, o.radius, o.radius)) {
+                if (isOneOfTrianglePointsInEllipse(rocketTrianglePoints, o.x, o.y, o.radius, o.radius)) {
                     this.isCrashed = true;
                     this.lastFrame = this.frame;
                 }
             }
-            if (checkIfRocketHitEllipse(this, bounds.finish.x, bounds.finish.y, bounds.finish.radius, bounds.finish.radius)) {
+            if (isOneOfTrianglePointsInEllipse(rocketTrianglePoints, bounds.finish.x, bounds.finish.y, bounds.finish.radius, bounds.finish.radius)) {
                 this.isLanded = true;
                 this.lastFrame = this.frame;
             }
-            if (!this.isLanded && (this.pos.x + 5 <= bounds.left || this.pos.x + ROCKET_DIM - 5 >= bounds.right || this.pos.y <= bounds.top || this.pos.y + ROCKET_DIM >= bounds.bottom)) {
+            if (!this.isLanded && isOneOfTrianglePointsOutOfBOunds(rocketTrianglePoints, bounds)) {
                 this.isCrashed = true;
                 this.lastFrame = this.frame;
             }
@@ -127,35 +128,44 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
         }
     }
 
+    this.getTrianglePointsFromRocket = function () {
+        let rcx = this.pos.x + ROCKET_DIM / 2;
+        let rcy = this.pos.y + ROCKET_DIM / 2;
+
+        let rocketTipX = rcx + ROCKET_DIM / 2 * Math.cos(this.rotation * Math.PI / 180);
+        let rocketTipY = rcy - ROCKET_DIM / 2 * Math.sin(this.rotation * Math.PI / 180);
+
+        let leftBaseX = rcx + ROCKET_DIM / 2 * Math.cos((this.rotation + 225) * Math.PI / 180);
+        let leftBaseY = rcy - ROCKET_DIM / 2 * Math.sin((this.rotation + 225) * Math.PI / 180);
+
+        let rightBaseX = rcx + ROCKET_DIM / 2 * Math.cos((this.rotation + 135) * Math.PI / 180);
+        let rightBaseY = rcy - ROCKET_DIM / 2 * Math.sin((this.rotation + 135) * Math.PI / 180);
+        return [{ x: rocketTipX, y: rocketTipY }, { x: leftBaseX, y: leftBaseY }, { x: rightBaseX, y: rightBaseY }];
+    }
+
 }
 
-function checkIfRocketHitEllipse(rocket, ex, ey, ea, eb) {
-    let rcx = rocket.pos.x + ROCKET_DIM / 2;
-    let rcy = rocket.pos.y + ROCKET_DIM / 2;
-    
-    let rocketTipX = rcx + ROCKET_DIM / 2 * Math.cos(rocket.rotation * Math.PI / 180);
-    let rocketTipY = rcy - ROCKET_DIM / 2 * Math.sin(rocket.rotation * Math.PI / 180);
-
-    let leftBaseX = rcx + ROCKET_DIM / 2 * Math.cos((rocket.rotation + 225)* Math.PI / 180);
-    let leftBaseY = rcy - ROCKET_DIM / 2 * Math.sin((rocket.rotation + 225)* Math.PI / 180);
-
-    let rightBaseX = rcx + ROCKET_DIM / 2 * Math.cos((rocket.rotation + 135)* Math.PI / 180);
-    let rightBaseY = rcy - ROCKET_DIM / 2 * Math.sin((rocket.rotation + 135)* Math.PI / 180);
-
-    if (checkIfSomePointsInEllipse(rocketTipX, rocketTipY, leftBaseX, leftBaseY, ex, ey, ea, eb))
-        return true;
-    if (checkIfSomePointsInEllipse(rocketTipX, rocketTipY, rightBaseX, rightBaseY, ex, ey, ea, eb))
-        return true;
-    if (checkIfSomePointsInEllipse(leftBaseX, leftBaseY, rightBaseX, rightBaseY, ex, ey, ea, eb))
-        return true;
+function isOneOfTrianglePointsOutOfBOunds(trianglePoints, bounds) {
+    for (let i = 0; i < trianglePoints.length; i++) {
+        const { x, y } = trianglePoints[i];
+        if (x < bounds.left - 5 || x > bounds.right || y < bounds.top || y > bounds.bottom)
+            return true;
+    }
     return false;
 }
 
-function checkIfSomePointsInEllipse(x1, y1, x2, y2, ex, ey, ea, eb) {
+function isOneOfTrianglePointsInEllipse(trianglePoints, ex, ey, ea, eb) {
+    for (let i = 0; i < trianglePoints.length; i++) {
+        const { x, y } = trianglePoints[i];
+        if (isPointInEllipse(x, y, ex, ey, ea, eb))
+            return true;
+    }
+    return false;
+}
+
+function isPointInEllipse(x1, y1, ex, ey, ea, eb) {
     return ((Math.pow((x1 - ex), 2) / Math.pow(ea, 2)
-        + Math.pow((y1 - ey), 2) / Math.pow(eb, 2)) <= 1) ||
-        ((Math.pow((x2 - ex), 2) / Math.pow(ea, 2)
-            + Math.pow((y2 - ey), 2) / Math.pow(eb, 2)) <= 1)
+        + Math.pow((y1 - ey), 2) / Math.pow(eb, 2)) <= 1)
 }
 
 // Overcomplicated and not used
