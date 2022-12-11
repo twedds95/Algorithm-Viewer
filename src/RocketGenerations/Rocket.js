@@ -1,4 +1,4 @@
-import { ROCKET_DIM } from "./SmartRockets";
+import { ROCKET_DIM, randomNumber } from "./SmartRockets";
 
 const MUTATION_ODDS = 0.10;
 const MAX_SPEED = 1;
@@ -17,8 +17,9 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
     this.strength = 0;
     this.distanceTravelled = 0;
 
-    this.crashed = false;
-    this.landed = false;
+    this.isBoostersOn = false;
+    this.isCrashed = false;
+    this.isLanded = false;
     this.lastFrame = 1;
     this.dna = dna;
 
@@ -28,6 +29,9 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
         if (index >= this.dna.length) {
             return;
         }
+
+        this.isBoostersOn = this.frame < this.fuelCapacity;
+
         this.acceleration.x = this.dna[index].x / MASS;
         this.acceleration.y = (this.dna[index].y + GRAVITY) / MASS;
 
@@ -48,8 +52,7 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
         }
         if (Math.sqrt(this.acceleration.x * this.acceleration.x +
             this.acceleration.y * this.acceleration.y) > MAX_SPEED / MASS) {
-            this.rotation = Math.atan2(this.velocity.y, this.velocity.x) * 180 / Math.PI;
-            this.rotation += 90;
+            this.rotation = Math.atan2(this.velocity.x, -this.velocity.y) * 180 / Math.PI;
         }
     }
 
@@ -77,34 +80,34 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
     }
 
     this.updatePosition = function (obstacles, bounds) {
-        if (!this.landed && !this.crashed) {
+        if (!this.isLanded && !this.isCrashed) {
             this.applyForce();
-            //check if crashed or landed with obstacles and bounds
+            //check if isCrashed or isLanded with obstacles and bounds
             for (let i = 0; i < obstacles.length; i++) {
                 let o = obstacles[i];
-                if (checkIfRocketIntersectsEllipse(this.pos.x, this.pos.y, o.x, o.y, o.width, o.height)) {
-                    this.crashed = true;
+                if (checkIfRocketHitEllipse(this, o.x, o.y, o.radius, o.radius)) {
+                    this.isCrashed = true;
                     this.lastFrame = this.frame;
                 }
             }
-            if (checkIfRocketIntersectsEllipse(this.pos.x, this.pos.y, bounds.finish.x, bounds.finish.y, bounds.finish.radius, bounds.finish.radius)) {
-                this.landed = true;
+            if (checkIfRocketHitEllipse(this, bounds.finish.x, bounds.finish.y, bounds.finish.radius, bounds.finish.radius)) {
+                this.isLanded = true;
                 this.lastFrame = this.frame;
             }
-            if (!this.landed && (this.pos.x + 10 <= bounds.left || this.pos.x >= bounds.right || this.pos.y <= bounds.top || this.pos.y + 10 >= bounds.bottom)) {
-                this.crashed = true;
+            if (!this.isLanded && (this.pos.x + 10 <= bounds.left || this.pos.x >= bounds.right || this.pos.y <= bounds.top || this.pos.y + 10 >= bounds.bottom)) {
+                this.isCrashed = true;
                 this.lastFrame = this.frame;
             }
         }
-        return this.landed || this.crashed || this.frame >= this.dna.length;
+        return this.isLanded || this.isCrashed || this.frame >= this.dna.length;
     }
 
     this.calculateStrengths = function (finish) {
         let multiplier = 1;
-        if (this.landed) {
+        if (this.isLanded) {
             multiplier = 2;
         }
-        if (this.crashed) {
+        if (this.isCrashed) {
             multiplier = 0.5;
         }
         let distanceX = this.pos.x - finish.x;
@@ -126,24 +129,54 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
 
 }
 
-function checkIfRocketIntersectsEllipse(rx, ry, ex, ey, ea, eb) {
-    if ((Math.pow((rx - ex), 2) / Math.pow(ea, 2)
-        + Math.pow((ry - ey), 2) / Math.pow(eb, 2)) <= 1)
-        return true;
-    if ((Math.pow((rx + ROCKET_DIM - ex), 2) / Math.pow(ea, 2)
-        + Math.pow((ry - ey), 2) / Math.pow(eb, 2)) <= 1)
-        return true;
-    if ((Math.pow((rx - ex), 2) / Math.pow(ea, 2)
-        + Math.pow((ry + ROCKET_DIM - ey), 2) / Math.pow(eb, 2)) <= 1)
-        return true;
-    if ((Math.pow((rx + ROCKET_DIM - ex), 2) / Math.pow(ea, 2)
-        + Math.pow((ry + ROCKET_DIM - ey), 2) / Math.pow(eb, 2)) <= 1)
-        return true;
+function checkIfRocketHitEllipse(rocket, ex, ey, ea, eb) {
+    let rcx = rocket.pos.x + ROCKET_DIM / 2;
+    let rcy = rocket.pos.y + ROCKET_DIM / 2;
+    
+    let rocketTipX = rcx + ROCKET_DIM / 2 * Math.cos(rocket.rotation * Math.PI / 180);
+    let rocketTipY = rcy - ROCKET_DIM / 2 * Math.sin(rocket.rotation * Math.PI / 180);
 
+    let leftBaseX = rcx + ROCKET_DIM / 2 * Math.cos((rocket.rotation + 225)* Math.PI / 180);
+    let leftBaseY = rcy - ROCKET_DIM / 2 * Math.sin((rocket.rotation + 225)* Math.PI / 180);
+
+    let rightBaseX = rcx + ROCKET_DIM / 2 * Math.cos((rocket.rotation + 135)* Math.PI / 180);
+    let rightBaseY = rcy - ROCKET_DIM / 2 * Math.sin((rocket.rotation + 135)* Math.PI / 180);
+
+    if (checkIfSomePointsInEllipse(rocketTipX, rocketTipY, leftBaseX, leftBaseY, ex, ey, ea, eb))
+        return true;
+    if (checkIfSomePointsInEllipse(rocketTipX, rocketTipY, rightBaseX, rightBaseY, ex, ey, ea, eb))
+        return true;
+    if (checkIfSomePointsInEllipse(leftBaseX, leftBaseY, rightBaseX, rightBaseY, ex, ey, ea, eb))
+        return true;
     return false;
+}
+
+function checkIfSomePointsInEllipse(x1, y1, x2, y2, ex, ey, ea, eb) {
+    return ((Math.pow((x1 - ex), 2) / Math.pow(ea, 2)
+        + Math.pow((y1 - ey), 2) / Math.pow(eb, 2)) <= 1) ||
+        ((Math.pow((x2 - ex), 2) / Math.pow(ea, 2)
+            + Math.pow((y2 - ey), 2) / Math.pow(eb, 2)) <= 1)
+}
+
+// Overcomplicated
+function checkIfLineIntersectsEllipse(x1, y1, x2, y2, h, k, a, b) {
+    // y = -mx+c == y + mx = c
+    let m = 0, c = 0;
+    if (Math.abs(x2 - x1) < Number.EPSILON) { // special case where line is vertical x = const
+        return (a - b * (c / m - h) * (x1 - h)) >= 0;
+    }
+    m = (y1 - y2) / (x2 - x1);
+    c = y1 + m * x1;
+    // ellipse == (x - h)** / a + (y - k)** / b = 1
+    // derived formula to see if ellipse and line intersect (it's pretty long, so just look it up loser)
+    // also be careful because you used y = -m + c like an idiot so... 
+    let A = b + a * m * m;
+    let B = 2 * (a * m * k - a * m * c - b * h);
+    let C = b * h * h + a * c * c + a * k * k - 2 * a * c * k - a * b;
+    return B * B - 4 * A * C >= 0;
 }
 
 // keep genes bounded between min and max
 function randomGene() {
-    return { x: MAX_FORCE_X * (Math.random() * 2 - 1), y: MAX_FORCE_Y * (Math.random() - 1) };
+    return { x: randomNumber(MAX_FORCE_X, -MAX_FORCE_X), y: randomNumber(0, -MAX_FORCE_Y) };
 }
