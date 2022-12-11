@@ -94,7 +94,7 @@ export default function Rocket(startX, startY, fuelCapacity, dna) {
                 this.isLanded = true;
                 this.lastFrame = this.frame;
             }
-            if (!this.isLanded && (this.pos.x + 10 <= bounds.left || this.pos.x >= bounds.right || this.pos.y <= bounds.top || this.pos.y + 10 >= bounds.bottom)) {
+            if (!this.isLanded && (this.pos.x + 5 <= bounds.left || this.pos.x + ROCKET_DIM - 5 >= bounds.right || this.pos.y <= bounds.top || this.pos.y + ROCKET_DIM >= bounds.bottom)) {
                 this.isCrashed = true;
                 this.lastFrame = this.frame;
             }
@@ -158,23 +158,23 @@ function checkIfSomePointsInEllipse(x1, y1, x2, y2, ex, ey, ea, eb) {
             + Math.pow((y2 - ey), 2) / Math.pow(eb, 2)) <= 1)
 }
 
-// Overcomplicated
-function checkIfLineIntersectsEllipse(x1, y1, x2, y2, h, k, a, b) {
-    // y = -mx+c == y + mx = c
-    let m = 0, c = 0;
-    if (Math.abs(x2 - x1) < Number.EPSILON) { // special case where line is vertical x = const
-        return (a - b * (c / m - h) * (x1 - h)) >= 0;
-    }
-    m = (y1 - y2) / (x2 - x1);
-    c = y1 + m * x1;
-    // ellipse == (x - h)** / a + (y - k)** / b = 1
-    // derived formula to see if ellipse and line intersect (it's pretty long, so just look it up loser)
-    // also be careful because you used y = -m + c like an idiot so... 
-    let A = b + a * m * m;
-    let B = 2 * (a * m * k - a * m * c - b * h);
-    let C = b * h * h + a * c * c + a * k * k - 2 * a * c * k - a * b;
-    return B * B - 4 * A * C >= 0;
-}
+// Overcomplicated and not used
+// function checkIfLineIntersectsEllipse(x1, y1, x2, y2, h, k, a, b) {
+//     // y = -mx+c == y + mx = c
+//     let m = 0, c = 0;
+//     if (Math.abs(x2 - x1) < Number.EPSILON) { // special case where line is vertical x = const
+//         return (a - b * (c / m - h) * (x1 - h)) >= 0;
+//     }
+//     m = (y1 - y2) / (x2 - x1);
+//     c = y1 + m * x1;
+//     // ellipse == (x - h)** / a + (y - k)** / b = 1
+//     // derived formula to see if ellipse and line intersect (it's pretty long, so just look it up loser)
+//     // also be careful because you used y = -m + c like an idiot so... 
+//     let A = b + a * m * m;
+//     let B = 2 * (a * m * k - a * m * c - b * h);
+//     let C = b * h * h + a * c * c + a * k * k - 2 * a * c * k - a * b;
+//     return B * B - 4 * A * C >= 0;
+// }
 
 // keep genes bounded between min and max
 function randomGene() {
