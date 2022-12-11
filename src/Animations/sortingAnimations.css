@@ -15,22 +15,6 @@
     bottom: 0;
 }
 
-button {
-    transition-duration: 0.4s;
-    background-color: #428bca;
-    color: white;
-    padding: 0px 24px;
-    border-radius: 8px;
-    margin: 5px;
-}
-
-button:hover {
-    color: #428bca;
-    background-color: white;
-    border-color: #428bca;
-    border-radius: 8px;
-}
-
 select {
     background-color: white;
     color: #428bca;
@@ -40,19 +24,6 @@ select {
 }
 
 option, label {
-    background-color: white;
     color: #428bca;
     margin-left: 10px;
-}
-
-body {
-    background: #fafafa;
-    color: #333333;
-    margin-top: 10px;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    color: #444444;
-    margin-bottom: 7px;
-    margin-top: 7px;
 }
